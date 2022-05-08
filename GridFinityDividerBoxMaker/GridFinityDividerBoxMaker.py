@@ -346,7 +346,7 @@ def run(context):
     # Add the curved scoop
     edges = base_body.edges
     ty = nestingDepth + wallThiccness + 1 * SCALE
-    print(ty)
+    #print(ty)
     fillet_edge = None
     count = 0
     for n in range(edges.count):
@@ -356,7 +356,7 @@ def run(context):
         mn = bb.minPoint
         # FIXME: where does -8.2354 come from?
         if close(mn.y, ty) and close(mx.y, ty) and close(mn.x, baseCornerRadius) and close(mx.x, slotsWide * slotDimension - baseCornerRadius) and close(mn.z, -(slotsDeep * slotDimension - .1646)):
-            print(f'[{mn.x}, {mn.y}, {mn.z}] -> [{mx.x}, {mx.y}, {mx.z}]')
+            #print(f'[{mn.x}, {mn.y}, {mn.z}] -> [{mx.x}, {mx.y}, {mx.z}]')
             fillet_edge = edge
             count += 1
     assert count == 1
