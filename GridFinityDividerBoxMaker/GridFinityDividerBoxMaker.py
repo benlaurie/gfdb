@@ -69,40 +69,41 @@ def createBaseRectSketch(component: adsk.fusion.Component) -> adsk.fusion.Profil
 
 def createCurvedRect(component: adsk.fusion.Component, width: float, depth: float, radius: float, z: float) -> Tuple[adsk.core.ObjectCollection, adsk.fusion.Profile]:
     path = adsk.core.ObjectCollection.create()
-
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
+    p = lambda x, y: createPoint(x, y , z)
 
-    p0 = createPoint(radius, 0, z)
-    p1 = createPoint(width - radius, 0, z)
+
+    p0 = p(radius, 0)
+    p1 = p(width - radius, 0)
     l0 = lines.addByTwoPoints(p0, p1)
-    p2 = createPoint(width, radius, z)
-    p3 = createPoint(width, depth - radius, z)
+    p2 = p(width, radius)
+    p3 = p(width, depth - radius)
     l1 = lines.addByTwoPoints(p2, p3)
-    p4 = createPoint(width - radius, depth, z)
-    p5 = createPoint(radius, depth, z)
+    p4 = p(width - radius, depth)
+    p5 = p(radius, depth)
     l2 = lines.addByTwoPoints(p4, p5)
-    p6 = createPoint(0, depth - radius, z)
-    p7 = createPoint(0, radius, z)
+    p6 = p(0, depth - radius)
+    p7 = p(0, radius)
     l3 = lines.addByTwoPoints(p6, p7)
 
     arcs = sketch.sketchCurves.sketchArcs
 
-    p7c = createPoint(radius, radius, z)
+    p7c = p(radius, radius)
     a0 = arcs.addByCenterStartSweep(p7c, p7, math.pi / 2)
     # FIXME: you'd've thought all these merges made a single thing. You'd be wrong.
     # The arcs end up joined to the lines they were started on but the merges do nothing.
     #a0.endSketchPoint.merge(l0.startSketchPoint)
     #path.add(a0)
-    p1c = createPoint(width - radius, radius, z)
+    p1c = p(width - radius, radius)
     a1 = arcs.addByCenterStartSweep(p1c, p1, math.pi / 2)
     #a1.endSketchPoint.merge(l1.startSketchPoint)
     #path.add(a1)
-    p3c = createPoint(width - radius, depth - radius, z)
+    p3c = p(width - radius, depth - radius)
     a2 = arcs.addByCenterStartSweep(p3c, p3, math.pi / 2)
     #a2.endSketchPoint.merge(l2.startSketchPoint)
     #path.add(a2)
-    p5c = createPoint(radius, depth - radius, z)
+    p5c = p(radius, depth - radius)
     a3 = arcs.addByCenterStartSweep(p5c, p5, math.pi / 2)
     #a3.endSketchPoint.merge(l3.startSketchPoint)
     #path.add(a3)
@@ -158,15 +159,16 @@ def createRimSketch(component: adsk.fusion.Component) -> adsk.fusion.Profile:
     sketch = component.sketches.add(component.xYConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
     h = -slotDimension / 2
+    p = lambda x, y: createPoint(x, y , h)
 
-    p0 = createPoint(0, slotsHigh * slotDimension, h)
-    p1 = createPoint(0, slotsHigh * slotDimension + nestingDepth - nestingVerticalClearance, h)
+    p0 = p(0, slotsHigh * slotDimension)
+    p1 = p(0, slotsHigh * slotDimension + nestingDepth - nestingVerticalClearance)
     lines.addByTwoPoints(p0, p1)
-    p2 = createPoint(nestingRimWidth - nestingVerticalClearance, slotsHigh * slotDimension + nestingDepth - nestingRimWidth - cornerVerticalOffset, h)
+    p2 = p(nestingRimWidth - nestingVerticalClearance, slotsHigh * slotDimension + nestingDepth - nestingRimWidth - cornerVerticalOffset)
     lines.addByTwoPoints(p1, p2)
-    p3 = createPoint(nestingRimWidth - nestingVerticalClearance, slotsHigh * slotDimension + baseLip - cornerVerticalOffset, h)
+    p3 = p(nestingRimWidth - nestingVerticalClearance, slotsHigh * slotDimension + baseLip - cornerVerticalOffset)
     lines.addByTwoPoints(p2, p3)
-    p4 = createPoint(nestingRimWidth + baseLip - nestingVerticalClearance, slotsHigh * slotDimension, h)
+    p4 = p(nestingRimWidth + baseLip - nestingVerticalClearance, slotsHigh * slotDimension)
     lines.addByTwoPoints(p3, p4)
     lines.addByTwoPoints(p4, p0)
 
@@ -176,16 +178,17 @@ def createIndentSketch(component: adsk.fusion.Component) -> adsk.fusion.Profile:
     sketch = component.sketches.add(component.xYConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
     h = -slotDimension / 2
+    p = lambda x, y: createPoint(x, y , h)
 
     # Note that this is wallThiccness below p4 in createRimSketch
     x = nestingRimWidth + baseLip - nestingVerticalClearance
-    p0 = createPoint(x, slotsHigh * slotDimension - wallThiccness, h)
-    p1 = createPoint(x - wallThiccness, slotsHigh * slotDimension - 2 * wallThiccness, h)
+    p0 = p(x, slotsHigh * slotDimension - wallThiccness)
+    p1 = p(x - wallThiccness, slotsHigh * slotDimension - 2 * wallThiccness)
     lines.addByTwoPoints(p0, p1)
-    p2 = createPoint(x - wallThiccness, nestingDepth + wallThiccness + 1 * SCALE, h)
+    p2 = p(x - wallThiccness, nestingDepth + wallThiccness + 1 * SCALE)
     # FIXME: fillet this edge
     lines.addByTwoPoints(p1, p2)
-    p3 = createPoint(x, nestingDepth + wallThiccness + 1 * SCALE, h)
+    p3 = p(x, nestingDepth + wallThiccness + 1 * SCALE)
     lines.addByTwoPoints(p2, p3)
     lines.addByTwoPoints(p3, p0)
 
@@ -196,10 +199,9 @@ def createLedgeSketch(component: adsk.fusion.Component) -> adsk.fusion.Profile:
 
     sketch: adsk.fusion.Sketch = component.sketches.add(component.yZConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
-    #h = slotDimension / 2
     h = wallThiccness * 2
-
     p = lambda x, y: createPoint(x, y , h)
+
     y = slotDimension * slotsHigh
     p0 = p(wallThiccness, y)
     p1 = p(wallThiccness + 16 * SCALE, y)
@@ -214,8 +216,8 @@ def createLedgeSketch(component: adsk.fusion.Component) -> adsk.fusion.Profile:
 def createDividerSketch(component: adsk.fusion.Component, pos: float) -> adsk.fusion.Profile:
     sketch: adsk.fusion.Sketch = component.sketches.add(component.yZConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
-
     p = lambda x, y: createPoint(x, y, pos)
+
     p0 = p(0, nestingDepth)
     p1 = p(slotsDeep * slotDimension, nestingDepth)
     lines.addByTwoPoints(p0, p1)
