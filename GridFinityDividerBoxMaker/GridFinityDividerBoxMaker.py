@@ -5,14 +5,17 @@ import math
 from typing import Tuple
 import adsk.core, adsk.fusion, adsk.cam, traceback
 
+# Why?
+SCALE = 0.1
+
 # User parameters
 slotsWide = 2
 slotsDeep = 3
 slotsHigh = 1.5
 dividerCount = 5
 
-# Why?
-SCALE = 0.1
+magnetDiameter = 6.5 * SCALE
+magnetThiccness = 2.5 * SCALE
 
 # Sizes!
 # FIXME: make these strings, e.g. "42 mm" (maybe, some contexts that's not right for)
@@ -23,6 +26,7 @@ nestingDepth = 5 * SCALE
 nestingRimWidth = 2.4 * SCALE
 nestingClearance = .25 * SCALE
 wallThiccness = 1.2 * SCALE
+holeOffset = 8 * SCALE
 
 # Derived sizes
 nestingVerticalClearance = nestingClearance * 1.416  # Empirically determined from original sketch
@@ -66,12 +70,25 @@ def createBaseRectSketch(component: adsk.fusion.Component) -> adsk.fusion.Profil
     base_rect_profile = base_sketch.profiles.item(0)
     return base_rect_profile
 
+def createMagnetHolesSketch(component: adsk.fusion.Component) -> adsk.core.ObjectCollection:
+    sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
+    
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(holeOffset, holeOffset, 0), magnetDiameter / 2.)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(slotDimension - holeOffset, holeOffset, 0), magnetDiameter / 2.)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(slotDimension - holeOffset, slotDimension - holeOffset, 0), magnetDiameter / 2.)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(holeOffset, slotDimension - holeOffset, 0), magnetDiameter / 2.)
+
+    circles = adsk.core.ObjectCollection.create()
+    for n in range(4):
+        circles.add(sketch.profiles.item(n))
+
+    return circles
+
 def createCurvedRect(component: adsk.fusion.Component, width: float, depth: float, radius: float, z: float) -> Tuple[adsk.core.ObjectCollection, adsk.fusion.Profile]:
     path = adsk.core.ObjectCollection.create()
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
     p = lambda x, y: createPoint(x, y , z)
-
 
     p0 = p(radius, 0)
     p1 = p(width - radius, 0)
@@ -243,12 +260,17 @@ def run(context):
 
     # Sketch base
     base_rect_profile = createBaseRectSketch(component)
-
     # Extrude
     distance = createDistance(nestingDepth)
     base = component.features.extrudeFeatures.addSimple(base_rect_profile, distance, NEW_BODY)
     base_body = base.bodies.item(0)
     base_body.name = "Base"
+
+    # Magnet holes
+    magnet_holes_profile = createMagnetHolesSketch(component)
+    # Extrude
+    distance = createDistance(magnetThiccness)
+    component.features.extrudeFeatures.addSimple(magnet_holes_profile, distance, CUT)
 
     # Profile for the edge
     edge_sketch = component.sketches.add(component.xYConstructionPlane)
