@@ -1,7 +1,6 @@
 #Author- Ben Laurie <ben@links.org>
 #Description- Make gridfinity divider boxes
 
-from calendar import c
 import math
 from typing import Tuple
 import adsk.core, adsk.fusion, adsk.cam, traceback
