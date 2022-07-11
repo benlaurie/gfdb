@@ -9,11 +9,71 @@ import adsk.core, adsk.fusion, adsk.cam, traceback
 SCALE = 0.1
 
 # User parameters
-slotsWide = 2
-slotsDeep = 3
-slotsHigh = 1.5
-dividerCount = 5
 
+ui = None
+app = adsk.core.Application.get()
+ui = app.userInterface
+
+slotsWide = 2
+input = '2'  # The initial default value.
+isValid = False
+while not isValid:
+    retVals = ui.inputBox('Slots Wide', 'Count', input)
+    if retVals[0]:
+        (input, isCancelled) = retVals
+    #if isCancelled:
+    #    return
+    try:
+        slotsWide = int(input)
+        isValid = True
+    except:
+        isValid = False
+
+
+slotsDeep = 3
+input = '3'  # The initial default value.
+isValid = False
+while not isValid:
+    retVals = ui.inputBox('Slots Deep', 'Count', input)
+    if retVals[0]:
+        (input, isCancelled) = retVals
+    #if isCancelled:
+    #    return
+    try:
+        slotsDeep = int(input)
+        isValid = True
+    except:
+        isValid = False
+
+slotsHigh = 1.5
+input = '1.5'  # The initial default value.
+isValid = False
+while not isValid:
+    retVals = ui.inputBox('Slots High', 'Count', input)
+    if retVals[0]:
+        (input, isCancelled) = retVals
+    #if isCancelled:
+    #    return
+    try:
+        slotsHigh = float(input)
+        isValid = True
+    except:
+        isValid = False
+
+input = '5'  # The initial default value.
+dividerCount = 5
+isValid = False
+while not isValid:
+    retVals = ui.inputBox('Enter divider count', 'Count', input)
+    if retVals[0]:
+        (input, isCancelled) = retVals
+    #if isCancelled:
+    #    return
+    try:
+        dividerCount = int(input)
+        isValid = True
+    except:
+        isValid = False
 magnetDiameter = 6.5 * SCALE
 magnetThiccness = 2.5 * SCALE
 
