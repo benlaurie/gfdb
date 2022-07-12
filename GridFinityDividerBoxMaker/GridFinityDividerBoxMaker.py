@@ -8,11 +8,13 @@ import adsk.core, adsk.fusion, adsk.cam, traceback
 # Why?
 SCALE = 0.1
 
+
 # User parameters
-slotsWide = 2
-slotsDeep = 3
-slotsHigh = 1.5
-dividerCount = 5
+slotsWide=0
+slotsDeep=0
+slotsHigh=0
+dividerCount = 0
+
 
 magnetDiameter = 6.5 * SCALE
 magnetThiccness = 2.5 * SCALE
@@ -35,6 +37,41 @@ nestingVerticalClearance = nestingClearance * 1.416  # Empirically determined fr
 CUT = adsk.fusion.FeatureOperations.CutFeatureOperation
 JOIN = adsk.fusion.FeatureOperations.JoinFeatureOperation
 NEW_BODY = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+
+def dialogInt(ui : adsk.core.UserInterface, message: str,fieldName: str, default: str) -> int:
+    isValid = False
+    isCancelled=False
+    while not isValid   :
+        retVals = ui.inputBox(message+ ' (integers only)', fieldName, default)
+        if retVals[0]:
+            (default, isCancelled) = retVals
+        if isCancelled:
+            #FIXME this doesn't work
+            raise RunTimeError('User Cancelled')
+          
+        try:
+            retint = int(default)
+            return retint
+        except:
+            isValid = False
+
+def dialogFloat(ui : adsk.core.UserInterface, message: str,fieldName: str, default: str) -> float:
+    isValid = False
+    isCancelled=False
+    while not isValid   :
+        retVals = ui.inputBox(message+ ' (can be decimal)', fieldName, default)
+        if retVals[0]:
+            (default, isCancelled) = retVals
+        if isCancelled:
+            #FIXME this doesn't work
+            raise RunTimeError('User Cancelled')
+        try:
+            retfloat = float(default)
+            return retfloat
+        except:
+            isValid = False
+
+
 
 def createComponent(design: adsk.fusion.Design, name: str) -> adsk.fusion.Component:
     rootComp = design.rootComponent
@@ -247,10 +284,25 @@ def createDividerSketch(component: adsk.fusion.Component, pos: float) -> adsk.fu
 
 
 def run(context):
+
+
     # Get the active design.
     app = adsk.core.Application.get()
     product = app.activeProduct
     design = adsk.fusion.Design.cast(product)
+    ui = app.userInterface
+
+
+
+    global slotsWide
+    slotsWide = dialogInt(ui,'Enter how many slots wide','Slots Wide','2')
+    global slotsDeep
+    slotsDeep= dialogInt(ui,'Enter how many slots deep','Slots Deep','3')
+    global slotsHigh
+    slotsHigh= dialogFloat(ui,'Enter how many slots high','Slots High','1.5')
+    global dividerCount
+    dividerCount=  dialogInt(ui,'Enter how many dividers','Divider Count','3')
+
 
     # Units
     design.fusionUnitsManager.distanceDisplayUnits = adsk.fusion.DistanceUnits.MillimeterDistanceUnits
