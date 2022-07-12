@@ -46,7 +46,9 @@ def dialogInt(ui : adsk.core.UserInterface, message: str,fieldName: str, default
         if retVals[0]:
             (default, isCancelled) = retVals
         if isCancelled:
-            return
+            #FIXME this doesn't work
+            raise RunTimeError('User Cancelled')
+          
         try:
             retint = int(default)
             return retint
@@ -61,7 +63,8 @@ def dialogFloat(ui : adsk.core.UserInterface, message: str,fieldName: str, defau
         if retVals[0]:
             (default, isCancelled) = retVals
         if isCancelled:
-            return
+            #FIXME this doesn't work
+            raise RunTimeError('User Cancelled')
         try:
             retfloat = float(default)
             return retfloat
