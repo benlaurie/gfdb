@@ -8,72 +8,14 @@ import adsk.core, adsk.fusion, adsk.cam, traceback
 # Why?
 SCALE = 0.1
 
+
 # User parameters
-
-ui = None
-app = adsk.core.Application.get()
-ui = app.userInterface
-
-slotsWide = 2
-input = '2'  # The initial default value.
-isValid = False
-while not isValid:
-    retVals = ui.inputBox('Slots Wide', 'Count', input)
-    if retVals[0]:
-        (input, isCancelled) = retVals
-    #if isCancelled:
-    #    return
-    try:
-        slotsWide = int(input)
-        isValid = True
-    except:
-        isValid = False
+slotsWide=0
+slotsDeep=0
+slotsHigh=0
+dividerCount = 0
 
 
-slotsDeep = 3
-input = '3'  # The initial default value.
-isValid = False
-while not isValid:
-    retVals = ui.inputBox('Slots Deep', 'Count', input)
-    if retVals[0]:
-        (input, isCancelled) = retVals
-    #if isCancelled:
-    #    return
-    try:
-        slotsDeep = int(input)
-        isValid = True
-    except:
-        isValid = False
-
-slotsHigh = 1.5
-input = '1.5'  # The initial default value.
-isValid = False
-while not isValid:
-    retVals = ui.inputBox('Slots High', 'Count', input)
-    if retVals[0]:
-        (input, isCancelled) = retVals
-    #if isCancelled:
-    #    return
-    try:
-        slotsHigh = float(input)
-        isValid = True
-    except:
-        isValid = False
-
-input = '5'  # The initial default value.
-dividerCount = 5
-isValid = False
-while not isValid:
-    retVals = ui.inputBox('Enter divider count', 'Count', input)
-    if retVals[0]:
-        (input, isCancelled) = retVals
-    #if isCancelled:
-    #    return
-    try:
-        dividerCount = int(input)
-        isValid = True
-    except:
-        isValid = False
 magnetDiameter = 6.5 * SCALE
 magnetThiccness = 2.5 * SCALE
 
@@ -95,6 +37,38 @@ nestingVerticalClearance = nestingClearance * 1.416  # Empirically determined fr
 CUT = adsk.fusion.FeatureOperations.CutFeatureOperation
 JOIN = adsk.fusion.FeatureOperations.JoinFeatureOperation
 NEW_BODY = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+
+def dialogInt(ui : adsk.core.UserInterface, message: str,fieldName: str, default: str) -> int:
+    isValid = False
+    isCancelled=False
+    while not isValid   :
+        retVals = ui.inputBox(message+ ' (integers only)', fieldName, default)
+        if retVals[0]:
+            (default, isCancelled) = retVals
+        if isCancelled:
+            return
+        try:
+            retint = int(default)
+            return retint
+        except:
+            isValid = False
+
+def dialogFloat(ui : adsk.core.UserInterface, message: str,fieldName: str, default: str) -> float:
+    isValid = False
+    isCancelled=False
+    while not isValid   :
+        retVals = ui.inputBox(message+ ' (can be decimal)', fieldName, default)
+        if retVals[0]:
+            (default, isCancelled) = retVals
+        if isCancelled:
+            return
+        try:
+            retfloat = float(default)
+            return retfloat
+        except:
+            isValid = False
+
+
 
 def createComponent(design: adsk.fusion.Design, name: str) -> adsk.fusion.Component:
     rootComp = design.rootComponent
@@ -307,10 +281,25 @@ def createDividerSketch(component: adsk.fusion.Component, pos: float) -> adsk.fu
 
 
 def run(context):
+
+
     # Get the active design.
     app = adsk.core.Application.get()
     product = app.activeProduct
     design = adsk.fusion.Design.cast(product)
+    ui = app.userInterface
+
+
+
+    global slotsWide
+    slotsWide = dialogInt(ui,'Enter how many slots wide','Slots Wide','2')
+    global slotsDeep
+    slotsDeep= dialogInt(ui,'Enter how many slots deep','Slots Deep','3')
+    global slotsHigh
+    slotsHigh= dialogFloat(ui,'Enter how many slots high','Slots High','1.5')
+    global dividerCount
+    dividerCount=  dialogInt(ui,'Enter how many dividers','Divider Count','3')
+
 
     # Units
     design.fusionUnitsManager.distanceDisplayUnits = adsk.fusion.DistanceUnits.MillimeterDistanceUnits
