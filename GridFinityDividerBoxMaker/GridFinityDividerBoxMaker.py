@@ -12,6 +12,7 @@ defaultSlotsHigh = 1
 defaultDividerCount = 0
 defaultIncludeScoop = True
 defaultIncludeLedge = True
+defaultIncludeMagnets = True
 
 # global set of event handlers to keep them referenced for the duration of the command
 handlers = []
@@ -281,6 +282,8 @@ class BoxCommandExecuteHandler(adsk.core.CommandEventHandler):
                     box.includeScoop = input.value
                 elif input.id == 'includeLedge':
                     box.includeLedge = input.value
+                elif input.id == 'includeMagnets':
+                    box.includeMagnets = input.value
 
             box.buildBox();
             
@@ -343,6 +346,9 @@ class BoxCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             initIncludeLedge = adsk.core.ValueInput.createByReal(defaultIncludeLedge)
             inputs.addBoolValueInput('includeLedge', 'Include Ledge?', True, '', defaultIncludeLedge)
 
+            initIncludeMagnets = adsk.core.ValueInput.createByReal(defaultIncludeMagnets)
+            inputs.addBoolValueInput('includeMagnets', 'Include Magnets?', True, '', defaultIncludeMagnets)
+
         except:
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -356,6 +362,7 @@ class Box:
         self._dividerCount = defaultDividerCount
         self._includeScoop = defaultIncludeScoop
         self._includeLedge = defaultIncludeLedge
+        self._includeMagnets = defaultIncludeMagnets
 
     #properties
     @property
@@ -407,6 +414,13 @@ class Box:
     def includeLedge(self, value):
         self._includeLedge = value
         
+    @property
+    def includeMagnets(self):
+        return self._includeMagnets
+    @includeMagnets.setter
+    def includeMagnets(self, value):
+        self._includeMagnets = value
+        
     def buildBox(self):
         try:
             # Get the active design.
@@ -434,12 +448,13 @@ class Box:
             base_body = base.bodies.item(0)
             base_body.name = "Base"
 
-            # Magnet holes
-            magnet_holes_profile = createMagnetHolesSketch(component)
+            if self.includeMagnets:
+                # Magnet hole sketch
+                magnet_holes_profile = createMagnetHolesSketch(component)
 
-            # Extrude
-            distance = createDistance(magnetThickness)
-            component.features.extrudeFeatures.addSimple(magnet_holes_profile, distance, CUT)
+                # Extrude for magnets
+                distance = createDistance(magnetThickness)
+                component.features.extrudeFeatures.addSimple(magnet_holes_profile, distance, CUT)
 
             # Profile for the edge
             edge_sketch = component.sketches.add(component.xYConstructionPlane)
