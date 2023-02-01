@@ -73,6 +73,7 @@ def close(a, b):
 
 def createBaseRectSketch(component: adsk.fusion.Component) -> adsk.fusion.Profile:
     base_sketch = component.sketches.add(component.xZConstructionPlane)
+    base_sketch.name = "Base Sketch"
     p0 = create2DPoint(0, 0)
     p1 = create2DPoint(slotDimension, slotDimension)
     base_rect = base_sketch.sketchCurves.sketchLines.addTwoPointRectangle(p0, p1)
@@ -82,7 +83,7 @@ def createBaseRectSketch(component: adsk.fusion.Component) -> adsk.fusion.Profil
 
 def createMagnetHolesSketch(component: adsk.fusion.Component) -> adsk.core.ObjectCollection:
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
-    
+    sketch.name = "Magnet Holes Sketch"
     sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(holeOffset, holeOffset, 0), magnetDiameter / 2.)
     sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(slotDimension - holeOffset, holeOffset, 0), magnetDiameter / 2.)
     sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(slotDimension - holeOffset, slotDimension - holeOffset, 0), magnetDiameter / 2.)
@@ -94,9 +95,10 @@ def createMagnetHolesSketch(component: adsk.fusion.Component) -> adsk.core.Objec
 
     return circles
 
-def createCurvedRect(component: adsk.fusion.Component, width: float, depth: float, radius: float, z: float) -> Tuple[adsk.core.ObjectCollection, adsk.fusion.Profile]:
+def createCurvedRect(component: adsk.fusion.Component, name, width: float, depth: float, radius: float, z: float) -> Tuple[adsk.core.ObjectCollection, adsk.fusion.Profile]:
     path = adsk.core.ObjectCollection.create()
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
+    sketch.name = name
     lines = sketch.sketchCurves.sketchLines
     p = lambda x, y: createPoint(x, y , z)
 
@@ -149,7 +151,7 @@ def createCurvedRect(component: adsk.fusion.Component, width: float, depth: floa
 
 
 def createBaseSweepSketch(component: adsk.fusion.Component) -> adsk.core.ObjectCollection:
-    b, _ = createCurvedRect(component, slotDimension, slotDimension, baseCornerRadius, 0)
+    b, _ = createCurvedRect(component,  "Base Sweep Sketch", slotDimension, slotDimension, baseCornerRadius, 0)
     return b
 
 # Note that this attempts to combins the new bodies with the original to give a single body - this only works if they touch
@@ -184,6 +186,7 @@ def rectPattern(body: adsk.fusion.BRepBody, wide: int, deep: int, dim: float) ->
 def createRimSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusion.Profile:
     cornerVerticalOffset = nestingClearance * .416  # Empirically determined from existing sketch
     sketch = component.sketches.add(component.xYConstructionPlane)
+    sketch.name = "Rim Sketch"
     lines = sketch.sketchCurves.sketchLines
     h = -slotDimension / 2
     p = lambda x, y: createPoint(x, y , h)
@@ -203,6 +206,7 @@ def createRimSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusion.
 
 def createIndentSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusion.Profile:
     sketch = component.sketches.add(component.xYConstructionPlane)
+    sketch.name = "Indent Sketch"
     lines = sketch.sketchCurves.sketchLines
     h = -slotDimension / 2
     p = lambda x, y: createPoint(x, y , h)
@@ -225,6 +229,7 @@ def createLedgeSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusio
     angle = 54
 
     sketch: adsk.fusion.Sketch = component.sketches.add(component.yZConstructionPlane)
+    sketch.name = "Ledge Sketch"
     lines = sketch.sketchCurves.sketchLines
     h = wallThickness * 2
     p = lambda x, y: createPoint(x, y , h)
@@ -458,6 +463,7 @@ class Box:
 
             # Profile for the edge
             edge_sketch = component.sketches.add(component.xYConstructionPlane)
+            edge_sketch.name = "Edge Profile Sketch"
             lines = edge_sketch.sketchCurves.sketchLines
             h = -slotDimension / 2
             p0 = createPoint(-1, 0, h)
@@ -480,7 +486,7 @@ class Box:
             sweep_path_objects = createBaseSweepSketch(component)
             sweep_path = component.features.createPath(sweep_path_objects)
 
-            # Do the sweep
+            # Do the sweeps
             sweeps = component.features.sweepFeatures
             sweep_input = sweeps.createInput(edge_profile, sweep_path, CUT)
             sweep = sweeps.add(sweep_input)
@@ -490,7 +496,7 @@ class Box:
                 rectPattern(base_body, self.slotsWide, self.slotsDeep, slotDimension)
 
             # Now the box
-            box_path_objects, box_profile = createCurvedRect(component, self.slotsWide * slotDimension, self.slotsDeep * slotDimension, baseCornerRadius, nestingDepth)
+            box_path_objects, box_profile = createCurvedRect(component, "Box Profile", self.slotsWide * slotDimension, self.slotsDeep * slotDimension, baseCornerRadius, nestingDepth)
             distance = createDistance(self.slotsHigh * slotDimension - nestingDepth)
             base = component.features.extrudeFeatures.addSimple(box_profile, distance, JOIN)
 
@@ -628,7 +634,7 @@ def run(context):
         #
         cmdDef = commandDefinitions.itemById('GridfinityDividerBox')
         if not cmdDef:
-            cmdDef = commandDefinitions.addButtonDefinition('GridfinityBox',
+            cmdDef = commandDefinitions.addButtonDefinition('GridfinityDividerBox',
                     'Create a Gridfinity Box',
                     'Create a Gridfinity Box.')
 
