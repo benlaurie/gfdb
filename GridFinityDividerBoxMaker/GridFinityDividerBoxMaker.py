@@ -231,7 +231,7 @@ def createLedgeSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusio
     sketch: adsk.fusion.Sketch = component.sketches.add(component.yZConstructionPlane)
     sketch.name = "Ledge Sketch"
     lines = sketch.sketchCurves.sketchLines
-    h = wallThickness * 2
+    h = wallThickness
     p = lambda x, y: createPoint(x, y , h)
 
     y = slotDimension * slotsHigh
@@ -244,7 +244,7 @@ def createLedgeSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusio
     lines.addByTwoPoints(p2, p0)
 
     return sketch.profiles.item(0)
-
+    
 def createDividerSketch(component: adsk.fusion.Component, pos: float, slotsHigh, slotsDeep) -> adsk.fusion.Profile:
     sketch: adsk.fusion.Sketch = component.sketches.add(component.yZConstructionPlane)
     lines = sketch.sketchCurves.sketchLines
