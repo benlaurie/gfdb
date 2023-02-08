@@ -29,7 +29,6 @@ magnetDiameter = 6.5 * SCALE
 magnetThickness = 2.5 * SCALE
 
 # Sizes!
-# FIXME: make these strings, e.g. "42 mm" (maybe, some contexts that's not right for)
 baseCornerRadius = 4 * SCALE
 baseLip = .8 * SCALE
 slotDimension = 42 * SCALE
@@ -38,6 +37,7 @@ nestingRimWidth = 2.4 * SCALE
 nestingClearance = .25 * SCALE
 wallThickness = 1.2 * SCALE
 holeOffset = 8 * SCALE
+ledgeOffset = 0.2 * SCALE
 
 # Derived sizes
 nestingVerticalClearance = nestingClearance * 1.416  # Empirically determined from original sketch
@@ -234,7 +234,7 @@ def createLedgeSketch(component: adsk.fusion.Component, slotsHigh) -> adsk.fusio
     h = wallThickness
     p = lambda x, y: createPoint(x, y , h)
 
-    y = slotDimension * slotsHigh
+    y = slotDimension * slotsHigh - ledgeOffset
     p0 = p(wallThickness, y)
     p1 = p(wallThickness + 16 * SCALE, y)
     lines.addByTwoPoints(p0, p1)
@@ -253,9 +253,9 @@ def createDividerSketch(component: adsk.fusion.Component, pos: float, slotsHigh,
     p0 = p(0, nestingDepth)
     p1 = p(slotsDeep * slotDimension, nestingDepth)
     lines.addByTwoPoints(p0, p1)
-    p2 = p(slotsDeep * slotDimension, slotsHigh * slotDimension)
+    p2 = p(slotsDeep * slotDimension, slotsHigh * slotDimension - ledgeOffset)
     lines.addByTwoPoints(p1, p2)
-    p3 = p(0, slotsHigh * slotDimension)
+    p3 = p(0, slotsHigh * slotDimension - ledgeOffset)
     lines.addByTwoPoints(p2, p3)
     lines.addByTwoPoints(p3, p0)
 
@@ -556,7 +556,7 @@ class Box:
             if self.includeLedge:
                 # Add the ledge
                 ledge_profile = createLedgeSketch(component, self.slotsHigh)
-                distance = createDistance(self.slotsWide * slotDimension - wallThickness * 4)
+                distance = createDistance(self.slotsWide * slotDimension - wallThickness * 2)
                 component.features.extrudeFeatures.addSimple(ledge_profile, distance, JOIN)
 
             if self.includeScoop:
