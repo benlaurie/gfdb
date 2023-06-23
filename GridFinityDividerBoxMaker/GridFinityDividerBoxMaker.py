@@ -5,14 +5,25 @@ import math
 from typing import Tuple
 import adsk.core, adsk.fusion, adsk.cam, traceback
 
+# Foot is 6mm high
+#
 defaultBoxName = "Box"
 defaultSlotsWide = 2
 defaultSlotsDeep = 2
-defaultSlotsHigh = 1
+
+# 52" Husky case 
+#
+defaultSlotsHigh = 1.45
+
+# 62" Husky case 
+#
+# defaultSlotsHigh = 1.25
+
 defaultDividerCount = 0
+defaultBaseOnly = False
 defaultIncludeScoop = True
 defaultIncludeLedge = True
-defaultIncludeMagnets = True
+defaultIncludeMagnets = False
 
 # global set of event handlers to keep them referenced for the duration of the command
 handlers = []
@@ -25,8 +36,8 @@ newComp = None
 # Why?
 SCALE = 0.1
 
-magnetDiameter = 6.5 * SCALE
-magnetThickness = 2.5 * SCALE
+magnetDiameter = 6.5 * SCALE * 0.75
+magnetThickness = 2.5 * SCALE * 0.75
 
 # Sizes!
 baseCornerRadius = 4 * SCALE
@@ -285,6 +296,8 @@ class BoxCommandExecuteHandler(adsk.core.CommandEventHandler):
                     box.dividerCount = input.value
                 elif input.id == 'includeScoop':
                     box.includeScoop = input.value
+                elif input.id == 'baseOnly':
+                    box.baseOnly = input.value
                 elif input.id == 'includeLedge':
                     box.includeLedge = input.value
                 elif input.id == 'includeMagnets':
@@ -340,13 +353,16 @@ class BoxCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             
             # I'd love to make this just MMs
             initSlotsHigh = adsk.core.ValueInput.createByReal(defaultSlotsHigh)
-            inputs.addFloatSpinnerCommandInput('slotsHigh', 'Slots High', '', 0.1, 10.0, 0.01, defaultSlotsHigh)
+            inputs.addFloatSpinnerCommandInput('slotsHigh', 'Slots High', '', 0.25, 10.0, 0.01, defaultSlotsHigh)
 
             initDividerCount = adsk.core.ValueInput.createByReal(defaultDividerCount)
             inputs.addIntegerSpinnerCommandInput('dividerCount', 'Divider Count', 0, 10, 1, defaultDividerCount)
 
             initIncludeScoop = adsk.core.ValueInput.createByReal(defaultIncludeScoop)
             inputs.addBoolValueInput('includeScoop', 'Include Scoop?', True, '', defaultIncludeScoop)
+
+            initBaseOnly = adsk.core.ValueInput.createByReal(defaultBaseOnly)
+            inputs.addBoolValueInput('baseOnly', 'Base Only?', True, '', defaultBaseOnly)
 
             initIncludeLedge = adsk.core.ValueInput.createByReal(defaultIncludeLedge)
             inputs.addBoolValueInput('includeLedge', 'Include Ledge?', True, '', defaultIncludeLedge)
@@ -366,6 +382,7 @@ class Box:
         self._slotsHigh = defaultSlotsHigh
         self._dividerCount = defaultDividerCount
         self._includeScoop = defaultIncludeScoop
+        self._baseOnly = defaultBaseOnly
         self._includeLedge = defaultIncludeLedge
         self._includeMagnets = defaultIncludeMagnets
 
@@ -411,6 +428,13 @@ class Box:
     @includeScoop.setter
     def includeScoop(self, value):
         self._includeScoop = value
+
+    @property
+    def baseOnly(self):
+        return self._baseOnly
+    @baseOnly.setter
+    def baseOnly(self, value):
+        self._baseOnly = value
 
     @property
     def includeLedge(self):
@@ -497,6 +521,11 @@ class Box:
 
             # Now the box
             box_path_objects, box_profile = createCurvedRect(component, "Box Profile", self.slotsWide * slotDimension, self.slotsDeep * slotDimension, baseCornerRadius, nestingDepth)
+            if self.baseOnly:
+                distance = createDistance(1*SCALE)
+                base = component.features.extrudeFeatures.addSimple(box_profile, distance, JOIN)
+                return
+                
             distance = createDistance(self.slotsHigh * slotDimension - nestingDepth)
             base = component.features.extrudeFeatures.addSimple(box_profile, distance, JOIN)
 
@@ -553,7 +582,7 @@ class Box:
             sweep_input = sweeps.createInput(indent_profile, box_path, CUT)
             sweep = sweeps.add(sweep_input)
 
-            if self.includeLedge:
+            if self.includeLedge and self.slotsHigh >= 0.43 :
                 # Add the ledge
                 ledge_profile = createLedgeSketch(component, self.slotsHigh)
                 distance = createDistance(self.slotsWide * slotDimension - wallThickness * 2)
