@@ -3,6 +3,8 @@
 #
 import math
 from typing import Tuple
+# import sys
+# sys.path.append("/Users/jamie/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Python/defs")
 import adsk.core, adsk.fusion, adsk.cam, traceback
 
 # Some Constants
@@ -143,9 +145,9 @@ def createCurvedRect(component: adsk.fusion.Component, name, width: float, depth
     # FIXME: not actually a path
     return path, sketch.profiles.item(0)
 
-def createBaseSweepSketch(component: adsk.fusion.Component) -> adsk.core.ObjectCollection:
-    b, _ = createCurvedRect(component,  "Base Sweep Sketch", slotDimension, slotDimension, baseCornerRadius, 0)
-    return b
+# def createBaseSweepSketch(component: adsk.fusion.Component) -> adsk.core.ObjectCollection:
+#     b, _ = createCurvedRect(component,  "Base Sweep Sketch", slotDimension, slotDimension, baseCornerRadius, 0)
+#     return b
 
 class HolsterCommandExecuteHandler(adsk.core.CommandEventHandler):
     def __init__(self):
@@ -252,7 +254,7 @@ class HolsterCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs.addFloatSpinnerCommandInput('backCornerRound', 'Back Corner Round', '', 0.25, 100.0, finestIncrement, defaultBackCornerRound)
 
             initFillet = adsk.core.ValueInput.createByReal(defaultFillet)
-            inputs.addFloatSpinnerCommandInput('fillet', 'Overall Fillet', '', 0.25, 100.0, finestIncrement, defaultFillet)
+            inputs.addFloatSpinnerCommandInput('fillet', 'Overall Fillet', '', 0.25, 100.0, 0.01, defaultFillet)
 
             initFrontSlotRound = adsk.core.ValueInput.createByReal(defaultFrontSlotRound)
             inputs.addFloatSpinnerCommandInput('frontSlotRound', 'Front Slot Round', '', 0.25, 100.0, finestIncrement, defaultFrontSlotRound)
@@ -437,7 +439,24 @@ class Holster:
             slot_profile = createSlotSketch(component, self)
             slot_depth = createDistance((self.remoteThickness + self.sideThickness) * SCALE)
             component.features.extrudeFeatures.addSimple(slot_profile, slot_depth, CUT)
+            
+            e = holster_body.edges
+           
+            fillet_edges = adsk.core.ObjectCollection.create()
+            for n in range(e.count):
+                edge = e.item(n)
+                bb = edge.boundingBox
+                mx = bb.maxPoint
+                mn = bb.minPoint
+                fillet_edges.add(edge)
 
+            fillets = component.features.filletFeatures
+            fillet_input = fillets.createInput()
+            fillet_radius = createDistance(self.fillet * SCALE)
+            fillet_input.addConstantRadiusEdgeSet(fillet_edges, fillet_radius, True)
+            fillet_input.isG2 = False
+            fillet_input.isRollingBallCorner = True
+            top_fillet = fillets.add(fillet_input)
         except:
             if ui:
                 ui.messageBox('Failed to compute the holster. This is most likely because the input values define an invalid holster.')

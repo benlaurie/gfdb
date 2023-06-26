@@ -8,8 +8,8 @@ if [ -d "${FUSION_360_API_DIR}" ]
 then
     mkdir -p "${FUSION_360_SCRIPTS_DIR}"
 	cd /Users/jamie/Projects/GitRepo/gfdb
-    cp GridFinityDividerBoxMaker/GridFinityDividerBoxMaker.py "${FUSION_360_SCRIPTS_DIR}"
-	cp RemoteHolster/RemoteHolsterMaker.py "${FUSION_360_SCRIPTS_DIR}"
+    cp -r GridFinityDividerBoxMaker "${FUSION_360_SCRIPTS_DIR}"
+	cp -r RemoteHolsterMaker "${FUSION_360_SCRIPTS_DIR}/"
 else
     echo "Fusion 360 API directory (${FUSION_360_API_DIR}) not found, aborting"
     exit 9
