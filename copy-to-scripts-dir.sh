@@ -7,7 +7,7 @@ FUSION_360_SCRIPTS_DIR="${FUSION_360_API_DIR}/Scripts"
 if [ -d "${FUSION_360_API_DIR}" ]
 then
     mkdir -p "${FUSION_360_SCRIPTS_DIR}"
-	cd /Users/jamie/Projects/GitRepo/gfdb
+	cd /Users/$USER/Projects/GitRepo/gfdb
     cp -r GridFinityDividerBoxMaker "${FUSION_360_SCRIPTS_DIR}"
 	cp -r RemoteHolsterMaker "${FUSION_360_SCRIPTS_DIR}/"
 else
