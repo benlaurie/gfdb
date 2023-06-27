@@ -187,6 +187,8 @@ class HolsterCommandExecuteHandler(adsk.core.CommandEventHandler):
                     holster.bottomThickness = input.value                
                 elif input.id == 'tolerance':
                     holster.tolerance = input.value                
+                elif input.id == 'temp':
+                    holster.temp = input.value                
              
             holster.buildHolster();
             
@@ -271,6 +273,10 @@ class HolsterCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             initTolerance = adsk.core.ValueInput.createByReal(defaultTolerance)
             inputs.addFloatSpinnerCommandInput('tolerance', 'Tolerance', '', 0.25, 100.0, finestIncrement, defaultTolerance)
 
+            initTemp = adsk.core.ValueInput.createByReal(0)
+            inputs.addIntegerSpinnerCommandInput('temp', 'Temp', 0, 50, 1, 0)
+            
+            
         except:
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -290,6 +296,7 @@ class Holster:
         self._backThickness = defaultBackThickness
         self._bottomThickness = defaultBottomThickness
         self._tolerance = defaultTolerance
+        self._temp = 0
 
     # properties
     #
@@ -384,6 +391,12 @@ class Holster:
     def tolerance(self, value):
         self._tolerance = value
 
+    @property
+    def temp(self):
+        return self._temp
+    @temp.setter
+    def temp(self, value):
+        self._temp = value
 
     def buildHolster(self):
         try:
@@ -440,14 +453,69 @@ class Holster:
             slot_depth = createDistance((self.remoteThickness + self.sideThickness) * SCALE)
             component.features.extrudeFeatures.addSimple(slot_profile, slot_depth, CUT)
             
-            e = holster_body.edges
-           
+            # Round the back corners
+            #
+            edges = holster_body.edges
             fillet_edges = adsk.core.ObjectCollection.create()
-            for n in range(e.count):
-                edge = e.item(n)
-                bb = edge.boundingBox
-                mx = bb.maxPoint
-                mn = bb.minPoint
+
+            for n in range(edges.count):
+                edge = edges.item(n)
+                if math.isclose(edge.length, self.backThickness * SCALE):
+                    # Need to figure out where it is
+                    bb = edge.boundingBox
+                    maxZ = bb.maxPoint.z
+                    minZ = bb.minPoint.z
+                    if math.isclose(maxZ, minZ) and math.isclose(maxZ, (self.remoteLength + self.bottomThickness) * SCALE):
+                        fillet_edges.add(edge)
+
+            fillets = component.features.filletFeatures
+            fillet_input = fillets.createInput()
+            fillet_radius = createDistance(self.backCornerRound * SCALE)
+            fillet_input.addConstantRadiusEdgeSet(fillet_edges, fillet_radius, True)
+            fillet_input.isG2 = False
+            fillet_input.isRollingBallCorner = True
+            top_fillet = fillets.add(fillet_input)
+
+            fillet_edges.clear()
+            for n in range(edges.count):
+                edge = edges.item(n)
+                if math.isclose(edge.length, self.sideThickness * SCALE):
+                    # Need to figure out where it is
+                    bb = edge.boundingBox
+                    maxZ = bb.maxPoint.z
+                    minZ = bb.minPoint.z
+                    minY = bb.minPoint.y
+                    
+                    if math.isclose(maxZ, minZ) and math.isclose(maxZ, (self.frontHeight + self.bottomThickness) * SCALE) and math.isclose(minY, 0):
+                        fillet_edges.add(edge)
+
+            fillets = component.features.filletFeatures
+            fillet_input = fillets.createInput()
+            fillet_radius = createDistance(self.frontSlotRound * SCALE)
+            fillet_input.addConstantRadiusEdgeSet(fillet_edges, fillet_radius, True)
+            fillet_input.isG2 = False
+            fillet_input.isRollingBallCorner = True
+            top_fillet = fillets.add(fillet_input)
+            
+            self.includeScrewHoles = True
+
+            if self.includeScrewHoles:
+                # Magnet hole sketch
+                screwHolesProfile = createScrewHolesSketch(component, self, 2)
+
+                # Extrude for magnets
+                distance = createDistance(self.backThickness * SCALE)
+                component.features.extrudeFeatures.addSimple(screwHolesProfile, distance, CUT)
+                
+                screwHolesProfile = createScrewHolesSketch(component, self, 4)
+                distance = createDistance(self.backThickness / 3 * SCALE)
+                component.features.extrudeFeatures.addSimple(screwHolesProfile, distance, CUT)
+                
+            # Soften everything
+            #
+            fillet_edges.clear()
+            for n in range(edges.count):
+                edge = edges.item(n)
                 fillet_edges.add(edge)
 
             fillets = component.features.filletFeatures
@@ -457,10 +525,30 @@ class Holster:
             fillet_input.isG2 = False
             fillet_input.isRollingBallCorner = True
             top_fillet = fillets.add(fillet_input)
+ 
+
         except:
             if ui:
                 ui.messageBox('Failed to compute the holster. This is most likely because the input values define an invalid holster.')
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
+
+    
+def createScrewHolesSketch(component: adsk.fusion.Component, holster, diameter) -> adsk.core.ObjectCollection:
+    sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
+    sketch.name = "Screw Holes Sketch"
+
+    holesCenter = (holster.sideThickness + holster.remoteWidth / 2)
+    holesBack = (holster.sideThickness + holster.remoteThickness)
+    holesSpace = (holster.bottomThickness + holster.remoteLength) / 4 * -1
+    
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(holesCenter * SCALE, holesSpace * SCALE, holesBack * SCALE), diameter * SCALE)
+    sketch.sketchCurves.sketchCircles.addByCenterRadius(createPoint(holesCenter * SCALE, 3 * holesSpace * SCALE, holesBack * SCALE), diameter * SCALE)
+
+    circles = adsk.core.ObjectCollection.create()
+    for n in range(2):
+        circles.add(sketch.profiles.item(n))
+
+    return circles
 
 def createPocketSketch(component: adsk.fusion.Component, holster) -> adsk.core.ObjectCollection:
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xYConstructionPlane)
@@ -479,7 +567,7 @@ def createPocketSketch(component: adsk.fusion.Component, holster) -> adsk.core.O
 def createFrontSketch(component: adsk.fusion.Component, holster) -> adsk.core.ObjectCollection:
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xYConstructionPlane)
     sketch.name = "Front Sketch"
-    
+
     p1 = createPoint(0, 0, (holster.remoteLength + holster.bottomThickness) * SCALE)
     p2 = createPoint((2 * holster.sideThickness + holster.remoteWidth) * SCALE, (holster.sideThickness + holster.remoteThickness) * SCALE, (holster.remoteLength + holster.bottomThickness) * SCALE)
 
@@ -493,7 +581,8 @@ def createFrontSketch(component: adsk.fusion.Component, holster) -> adsk.core.Ob
 def createSlotSketch(component: adsk.fusion.Component, holster) -> adsk.core.ObjectCollection:
     sketch: adsk.fusion.Sketch = component.sketches.add(component.xZConstructionPlane)
     sketch.name = "Slot Sketch"
-    slotLeft = (holster.sideThickness + holster.remoteWidth - holster.frontSlotWidth)/2
+    
+    slotLeft = (2 * holster.sideThickness + holster.remoteWidth - holster.frontSlotWidth) / 2
     p1 = createPoint(slotLeft * SCALE, 0, 0)
     p2 = createPoint((slotLeft + holster.frontSlotWidth) * SCALE, -1 * (holster.frontHeight + holster.bottomThickness) * SCALE, 0)
 
